@@ -45,7 +45,7 @@ def verify_vip_escalation(db: Session) -> dict:
     vip_customers = db.scalars(
         select(Order.customer_id)
         .group_by(Order.customer_id)
-        .having(func.sum(Order.total_amount) > 10000)
+        .having(func.sum(Order.amount) > 10000)
     ).all()
 
     if not vip_customers:

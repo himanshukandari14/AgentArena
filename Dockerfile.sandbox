@@ -1,0 +1,31 @@
+# Sandbox image — one fresh container per task run
+# Built once, spawned per run with an isolated SQLite copy
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+# Install Python deps
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project
+
+# Copy full source
+COPY . .
+RUN uv sync --frozen
+
+# Bake in a clean seeded snapshot at build time
+# Every container starts from exactly the same known state
+RUN uv run python -c "from scripts.seed import seed; seed(force=True)" && \
+    cp agentdesk.db agentdesk_seed.db
+
+# Entrypoint: restore fresh snapshot then start MCP SSE server
+ENTRYPOINT ["/bin/sh", "-c", "cp /app/agentdesk_seed.db /app/agentdesk.db && exec uv run python app/mcp/server.py"]
+
+EXPOSE 9000

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentForge — Evaluation Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: rgba(22, 28, 45, 0.7);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-purple: #8b5cf6;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .title-group h1 { font-size: 1.8rem; font-weight: 700; background: linear-gradient(135deg, #a78bfa, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .title-group p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--accent-green);
+      padding: 0.4rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .pulse-dot { width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .metric-card .label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .metric-card .value { font-size: 1.8rem; font-weight: 700; margin-top: 0.5rem; }
+
+    .section-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
+
+    .tasks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .task-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .task-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .task-card p { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; flex-grow: 1; }
+    .task-meta { display: flex; justify-content: space-between; align-items: center; }
+
+    .difficulty {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+    .diff-easy { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .diff-medium { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .diff-hard { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      color: white;
+      border: none;
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+
+    .runs-table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+    th { background: rgba(255, 255, 255, 0.03); padding: 0.8rem 1rem; color: var(--text-muted); font-weight: 600; }
+    td { padding: 0.8rem 1rem; border-top: 1px solid var(--border-color); }
+
+    .badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .status-passed { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+    .status-failed { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+    .status-running { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+
+    .cat-MODEL_FAILURE { color: #f87171; }
+    .cat-ENVIRONMENT_FAILURE { color: #fbbf24; }
+    .cat-TASK_FAILURE { color: #c084fc; }
+    .cat-NONE { color: #34d399; }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      z-index: 100;
+    }
+    .modal-content {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      max-width: 800px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .close-btn { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+    pre { background: #0b0f19; padding: 1rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; overflow-x: auto; color: #a78bfa; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="title-group">
+      <h1>AgentForge Platform</h1>
+      <p>AI Agent Evaluation & Verification Environment</p>
+    </div>
+    <div class="status-badge">
+      <span class="pulse-dot"></span> System Operational
+    </div>
+  </header>
+
+  <!-- Metrics Grid -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="label">Total Runs</div>
+      <div class="value" id="m-total">0</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Success Rate</div>
+      <div class="value" id="m-success" style="color: var(--accent-green)">0%</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Average Score</div>
+      <div class="value" id="m-score">0.0</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">P95 Runtime</div>
+      <div class="value" id="m-p95">0.0s</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Model Failures</div>
+      <div class="value" id="m-model-fail" style="color: var(--accent-red)">0</div>
+    </div>
+  </div>
+
+  <!-- Task Suite Launcher -->
+  <div class="section-title">
+    <span>Evaluation Task Suite</span>
+  </div>
+  <div class="tasks-grid" id="tasks-container"></div>
+
+  <!-- Historical Runs -->
+  <div class="section-title">
+    <span>Run Execution Traces</span>
+    <button class="btn" style="background: rgba(255,255,255,0.05)" onclick="loadDashboardData()">Refresh Traces</button>
+  </div>
+  <div class="runs-table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Run ID</th>
+          <th>Task</th>
+          <th>Status</th>
+          <th>Score</th>
+          <th>Failure Category</th>
+          <th>Duration</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="runs-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Modal for Trace Details -->
+  <div class="modal" id="trace-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Run Details</h2>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    async function loadDashboardData() {
+      // 1. Load Metrics
+      const mRes = await fetch('/metrics');
+      const m = await mRes.json();
+      document.getElementById('m-total').innerText = m.total_runs;
+      document.getElementById('m-success').innerText = m.success_rate_percent + '%';
+      document.getElementById('m-score').innerText = m.avg_score;
+      document.getElementById('m-p95').innerText = m.p95_runtime_seconds + 's';
+      document.getElementById('m-model-fail').innerText = m.failure_breakdown.MODEL_FAILURE;
+
+      // 2. Load Tasks
+      const tRes = await fetch('/tasks');
+      const tData = await tRes.json();
+      const tContainer = document.getElementById('tasks-container');
+      tContainer.innerHTML = tData.tasks.map(t => `
+        <div class="task-card">
+          <div>
+            <h3>${t.name}</h3>
+            <p>${t.description}</p>
+          </div>
+          <div class="task-meta">
+            <span class="difficulty diff-${t.difficulty}">${t.difficulty}</span>
+            <button class="btn" onclick="triggerRun('${t.id}')">Run Task</button>
+          </div>
+        </div>
+      `).join('');
+
+      // 3. Load Runs
+      const rRes = await fetch('/runs');
+      const runs = await rRes.json();
+      const tbody = document.getElementById('runs-tbody');
+      tbody.innerHTML = runs.map(r => `
+        <tr>
+          <td style="font-family: monospace; font-weight: 600;">${r.id}</td>
+          <td>${r.task_id}</td>
+          <td><span class="badge status-${r.status}">${r.status}</span></td>
+          <td><strong>${(r.score * 100).toFixed(0)}%</strong></td>
+          <td class="cat-${r.failure_category}">${r.failure_category}</td>
+          <td>${r.duration_seconds ? r.duration_seconds + 's' : '-'}</td>
+          <td>
+            <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="viewTrace('${r.id}')">Trace</button>
+            <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" onclick="replayRun('${r.id}')">Replay</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function triggerRun(taskId) {
+      await fetch('/runs', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({task_id: taskId})
+      });
+      setTimeout(loadDashboardData, 1000);
+    }
+
+    async function replayRun(runId) {
+      await fetch(`/runs/${runId}/replay`, { method: 'POST' });
+      setTimeout(loadDashboardData, 1000);
+    }
+
+    async function viewTrace(runId) {
+      const res = await fetch(`/runs/${runId}`);
+      const details = await res.json();
+      document.getElementById('modal-title').innerText = `Trace Overview — ${details.id}`;
+      document.getElementById('modal-body').innerHTML = `
+        <p><strong>Task ID:</strong> ${details.task_id}</p>
+        <p><strong>Status:</strong> ${details.status} | <strong>Score:</strong> ${(details.score * 100).toFixed(0)}%</p>
+        <p><strong>Failure Category:</strong> <span class="cat-${details.failure_category}">${details.failure_category}</span></p>
+        <p><strong>Failure Reason:</strong> ${details.failure_reason || 'N/A'}</p>
+        <h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Tool Call Execution Sequence</h4>
+        <pre>${JSON.stringify(details.tool_call_trace, null, 2)}</pre>
+      `;
+      document.getElementById('trace-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('trace-modal').style.display = 'none';
+    }
+
+    loadDashboardData();
+    setInterval(loadDashboardData, 5000);
+  </script>
+</body>
+</html>

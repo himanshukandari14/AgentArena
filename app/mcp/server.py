@@ -245,4 +245,23 @@ def find_tickets_needing_billing(
 
 
 if __name__ == "__main__":
-    mcp.run()
+    import os
+
+    mcp_port = os.getenv("MCP_PORT")
+    if mcp_port:
+        # SSE transport — used inside Docker sandbox containers.
+        # host/port are settings on the FastMCP instance, not run() kwargs.
+        # Disable DNS rebinding protection so host machine can reach the container.
+        from mcp.server.transport_security import TransportSecuritySettings
+
+        mcp.settings.host = "0.0.0.0"
+        mcp.settings.port = int(mcp_port)
+        mcp.settings.transport_security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=False,
+            allowed_hosts=["*"],
+            allowed_origins=["*"],
+        )
+        mcp.run(transport="sse")
+    else:
+        # stdio transport — used for local development
+        mcp.run()

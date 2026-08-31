@@ -19,6 +19,10 @@ class TaskRun(Base):
     end_time: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     duration_seconds: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
+    # Docker isolation fields — populated by EnvironmentManager
+    container_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    env_version: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
     score: Mapped[float] = mapped_column(Float, default=0.0)
     failure_category: Mapped[str] = mapped_column(
         String, default="NONE"
@@ -29,6 +33,7 @@ class TaskRun(Base):
     tool_calls: Mapped[list["ToolCallRecord"]] = relationship(
         "ToolCallRecord", back_populates="run", cascade="all, delete-orphan"
     )
+
 
 
 class ToolCallRecord(Base):

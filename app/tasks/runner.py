@@ -96,7 +96,7 @@ async def run_agent() -> None:
             for iteration in range(max_iterations):
 
                 response = client.responses.create(
-                    model="gpt-4o-mini-2024-07-18",
+                    model="gpt-4o-mini",
                     input=messages,
                     tools=openai_tools,
                 )
