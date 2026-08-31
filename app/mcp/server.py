@@ -171,6 +171,78 @@ def update_ticket(
     finally:
         db.close()
 
+@mcp.tool()
+def search_actionable_tickets(
+    customer_id: int,
+) -> list[dict]:
+    """Find open or pending tickets for a customer."""
+
+    db = SessionLocal()
+
+    try:
+        query = (
+            select(Ticket)
+            .where(Ticket.customer_id == customer_id)
+            .where(Ticket.status.in_(["open", "pending"]))
+        )
+
+        tickets = db.scalars(query).all()
+
+        return [
+            {
+                "id": ticket.id,
+                "customer_id": ticket.customer_id,
+                "subject": ticket.subject,
+                "status": ticket.status,
+                "priority": ticket.priority,
+                "assigned_team": ticket.assigned_team,
+            }
+            for ticket in tickets
+        ]
+
+    finally:
+        db.close()
+
+@mcp.tool()
+def find_tickets_needing_billing(
+) -> list[dict]:
+    """Find open or pending tickets belonging to customers with overdue invoices
+    that are not currently assigned to the Billing team.
+    """
+
+    db = SessionLocal()
+
+    try:
+        query = (
+            select(Ticket)
+            .join(
+                Invoice,
+                Invoice.customer_id == Ticket.customer_id,
+            )
+            .where(
+                Invoice.status == "overdue",
+                Ticket.status.in_(["open", "pending"]),
+                Ticket.assigned_team != "Billing",
+            )
+        )
+
+        tickets = db.scalars(query).unique().all()
+
+        return [
+            {
+                "id": ticket.id,
+                "customer_id": ticket.customer_id,
+                "subject": ticket.subject,
+                "status": ticket.status,
+                "priority": ticket.priority,
+                "assigned_team": ticket.assigned_team,
+            }
+            for ticket in tickets
+        ]
+
+    finally:
+        db.close()
+
 
 if __name__ == "__main__":
     mcp.run()

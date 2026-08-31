@@ -76,7 +76,11 @@ def random_date(days_back: int = 180) -> datetime:
     )
 
 
+from app.db.init_db import init_db
+
+
 def seed() -> None:
+    init_db()
     db = SessionLocal()
 
     try:
