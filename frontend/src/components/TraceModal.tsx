@@ -11,7 +11,18 @@ interface TraceModalProps {
 export function TraceModal({ run, onClose }: TraceModalProps) {
   if (!run) return null;
 
-  const toolCalls = run.tool_calls || [];
+  const rawToolCalls = run.tool_call_trace || run.tool_calls || [];
+  const toolCalls = rawToolCalls.map((tc, idx) => ({
+    id: tc.id || idx,
+    step: tc.step || idx + 1,
+    tool_name: tc.tool_name,
+    arguments: tc.arguments || tc.arguments_json || "{}",
+    result: tc.result || tc.result_json || "{}",
+    created_at: tc.created_at || "",
+  }));
+
+  const startTimeStr = run.start_time || run.created_at;
+  const formattedDate = startTimeStr ? new Date(startTimeStr).toLocaleString() : "N/A";
 
   const formatJson = (str: string) => {
     try {
@@ -33,9 +44,14 @@ export function TraceModal({ run, onClose }: TraceModalProps) {
               <div className="flex items-center gap-2">
                 <h3 className="font-mono text-base font-bold text-white">{run.id}</h3>
                 <span className="text-xs font-mono text-zinc-400 font-medium">({run.task_id})</span>
+                {run.container_id && (
+                  <span className="bg-blue-950/80 border border-blue-800/80 text-blue-300 text-[10px] font-mono px-2 py-0.5 rounded-full">
+                    🐳 container: {run.container_id.slice(0, 12)}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Executed: {new Date(run.created_at).toLocaleString()}
+                Executed: {formattedDate}
               </p>
             </div>
           </div>
@@ -124,7 +140,7 @@ export function TraceModal({ run, onClose }: TraceModalProps) {
                         </span>
                         <span className="text-sm font-bold text-white">{call.tool_name}</span>
                       </div>
-                      <span className="text-[10px] text-zinc-500">{call.created_at}</span>
+                      {call.created_at && <span className="text-[10px] text-zinc-500">{call.created_at}</span>}
                     </div>
 
                     {/* Arguments */}
@@ -133,7 +149,7 @@ export function TraceModal({ run, onClose }: TraceModalProps) {
                         Input Arguments
                       </span>
                       <pre className="bg-black/80 border border-zinc-800/80 rounded-lg p-3 text-xs text-zinc-300 overflow-x-auto">
-                        {formatJson(call.arguments_json)}
+                        {formatJson(call.arguments)}
                       </pre>
                     </div>
 
@@ -143,7 +159,7 @@ export function TraceModal({ run, onClose }: TraceModalProps) {
                         Execution Output
                       </span>
                       <pre className="bg-black/80 border border-zinc-800/80 rounded-lg p-3 text-xs text-emerald-400/90 overflow-x-auto">
-                        {formatJson(call.result_json)}
+                        {formatJson(call.result)}
                       </pre>
                     </div>
                   </div>

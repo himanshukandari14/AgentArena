@@ -23,8 +23,9 @@ def classify_failure(
 
     # 1. Environment Failure Detection
     if agent_error:
-        if "ConnectionRefused" in agent_error or "DB" in agent_error or "Crash" in agent_error:
-            return "ENVIRONMENT_FAILURE", f"Infrastructure crash detected: {agent_error}"
+        env_error_keywords = ["ConnectionRefused", "DB", "Crash", "402", "401", "429", "APIError", "credits", "APIKey", "Quota"]
+        if any(kw in agent_error for kw in env_error_keywords):
+            return "ENVIRONMENT_FAILURE", f"Infrastructure or API error: {agent_error}"
 
     if "verifier_exception" in verifier_result:
         return "ENVIRONMENT_FAILURE", f"Environment error during verification: {verifier_result['verifier_exception']}"

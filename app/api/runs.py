@@ -71,6 +71,8 @@ def list_runs(db: Session = Depends(get_db)):
             "failure_category": r.failure_category,
             "failure_reason": r.failure_reason,
             "duration_seconds": r.duration_seconds,
+            "container_id": r.container_id,
+            "env_version": r.env_version,
             "start_time": r.start_time.isoformat() if r.start_time else None,
             "end_time": r.end_time.isoformat() if r.end_time else None,
         }
@@ -100,6 +102,8 @@ def get_run_details(run_id: str, db: Session = Depends(get_db)):
         "failure_reason": run.failure_reason,
         "agent_output": run.agent_output,
         "duration_seconds": run.duration_seconds,
+        "container_id": run.container_id,
+        "env_version": run.env_version,
         "start_time": run.start_time.isoformat() if run.start_time else None,
         "end_time": run.end_time.isoformat() if run.end_time else None,
         "tool_call_trace": [

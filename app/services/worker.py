@@ -17,10 +17,13 @@ and the container is force-killed.
 import asyncio
 import json
 import logging
+import os
+import tempfile
 from datetime import datetime, timezone
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.session import SessionLocal
 from app.models import TaskRun, ToolCallRecord
@@ -152,15 +155,39 @@ async def execute_task_run_async(run_id: str) -> dict:
                 )
                 db.add(record)
 
-            # ── 4. Evaluate outcome ─────────────────────────────────────────
+            # ── 4. Copy container DB → host, run verifier against real state ─
+            # The container's SQLite has the agent's changes. The host DB does
+            # not. We must copy before destroying the container.
             with tracer.start_as_current_span("agentforge.verifier_eval"):
-                evaluation = evaluate_task_run(
-                    db=db,
-                    task_def=task_def,
-                    executed_steps=len(tool_calls_data),
-                    tool_error_count=tool_error_count,
-                    agent_error=agent_result.get("error"),
-                )
+                verifier_db_session = None
+                tmp_db_path = None
+                try:
+                    tmp_fd, tmp_db_path = tempfile.mkstemp(suffix=".db", prefix=f"agentforge_{run_id}_")
+                    os.close(tmp_fd)
+
+                    EnvironmentManager.copy_db_from_container(container_id, tmp_db_path)
+
+                    # Open a fresh SQLAlchemy session against the container's DB copy
+                    tmp_engine = create_engine(
+                        f"sqlite:///{tmp_db_path}",
+                        connect_args={"check_same_thread": False},
+                    )
+                    TmpSession = sessionmaker(bind=tmp_engine)
+                    verifier_db_session = TmpSession()
+
+                    evaluation = evaluate_task_run(
+                        db=verifier_db_session,
+                        task_def=task_def,
+                        executed_steps=len(tool_calls_data),
+                        tool_error_count=tool_error_count,
+                        agent_error=agent_result.get("error"),
+                    )
+                finally:
+                    if verifier_db_session:
+                        verifier_db_session.close()
+                    if tmp_db_path and os.path.exists(tmp_db_path):
+                        os.unlink(tmp_db_path)
+                        logger.debug(f"Removed temp verifier DB {tmp_db_path}")
 
             task_run.end_time = end_ts
             task_run.duration_seconds = round(duration, 2)

@@ -94,6 +94,67 @@ class EnvironmentManager:
         return container_id, mcp_url, env_version
 
     @staticmethod
+    def copy_db_from_container(container_id: str, dest_path: str) -> None:
+        """
+        Copy the container's modified SQLite DB to dest_path on the host.
+
+        WAL mode is enabled in the container — uncommitted writes accumulate in
+        agentdesk.db-wal. We force a FULL checkpoint via `docker exec` + Python
+        so the main .db file is up-to-date before we copy it.
+
+        Must be called BEFORE cleanup_environment() — the container must still be running.
+        """
+        import subprocess
+
+        # 1. Force WAL checkpoint inside the container using Python
+        #    (sqlite3 CLI is not installed in the python:3.12-slim image)
+        checkpoint_cmd = [
+            "docker", "exec", container_id,
+            "python3", "-c",
+            (
+                "import sqlite3, os; "
+                "db_path = os.getenv('DATABASE_URL', 'sqlite:///./agentdesk.db').replace('sqlite:///', '').replace('./', '/app/'); "
+                "db_path = db_path if db_path.startswith('/') else '/app/' + db_path; "
+                "conn = sqlite3.connect(db_path); "
+                "conn.execute('PRAGMA wal_checkpoint(FULL)'); "
+                "conn.close(); "
+                "print(f'Checkpoint OK: {db_path}')"
+            ),
+        ]
+        cp_result = subprocess.run(checkpoint_cmd, capture_output=True, text=True)
+        if cp_result.returncode == 0:
+            logger.info(f"WAL checkpoint: {cp_result.stdout.strip()}")
+        else:
+            logger.warning(f"WAL checkpoint failed (continuing): {cp_result.stderr.strip()}")
+
+        # 2. Find the actual DB path inside the container
+        find_cmd = [
+            "docker", "exec", container_id,
+            "python3", "-c",
+            (
+                "import os; "
+                "db_url = os.getenv('DATABASE_URL', 'sqlite:///./agentdesk.db'); "
+                "path = db_url.replace('sqlite:///', '').replace('./', '/app/'); "
+                "path = path if path.startswith('/') else '/app/' + path; "
+                "print(path)"
+            ),
+        ]
+        find_result = subprocess.run(find_cmd, capture_output=True, text=True)
+        container_db_path = find_result.stdout.strip() if find_result.returncode == 0 else "/app/agentdesk.db"
+
+        # 3. Copy the DB file
+        result = subprocess.run(
+            ["docker", "cp", f"{container_id}:{container_db_path}", dest_path],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Failed to copy DB from container {container_id}: {result.stderr}"
+            )
+        logger.info(f"Copied container DB from {container_id} → {dest_path}")
+
+    @staticmethod
     def cleanup_environment(container_id: str) -> None:
         """
         Stop and remove the container unconditionally.
