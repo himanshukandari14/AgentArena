@@ -27,7 +27,7 @@ async def benchmark_concurrent_runs(
             This was the measured bottleneck at concurrency >= 3.
     """
     print(f"\n==================================================")
-    print(f" AGENTFORGE CONCURRENCY BENCHMARK (N={concurrency_level}, timeout_multiplier={timeout_multiplier}x)")
+    print(f" AGENTARENA CONCURRENCY BENCHMARK (N={concurrency_level}, timeout_multiplier={timeout_multiplier}x)")
     print(f"==================================================\n")
 
     init_db()

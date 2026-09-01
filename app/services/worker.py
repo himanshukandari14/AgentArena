@@ -58,7 +58,7 @@ async def execute_task_run_async(run_id: str) -> dict:
     Executes a queued task run asynchronously inside an isolated Docker container.
 
     Steps:
-      1. Provisions a fresh Docker sandbox (agentforge-sandbox image)
+      1. Provisions a fresh Docker sandbox (agentarena-sandbox image)
       2. Connects agent to MCP SSE server running inside the container
       3. Agent performs tool calls against the container's isolated SQLite DB
       4. Verifier inspects the container's final DB state
@@ -80,7 +80,7 @@ async def execute_task_run_async(run_id: str) -> dict:
         db.commit()
 
         with tracer.start_as_current_span(
-            "agentforge.task_run",
+            "agentarena.task_run",
             attributes={
                 "run_id": run_id,
                 "task_id": task_def.id,
@@ -89,7 +89,7 @@ async def execute_task_run_async(run_id: str) -> dict:
         ) as span:
 
             # ── 1. Provision isolated Docker environment ────────────────────
-            with tracer.start_as_current_span("agentforge.environment_prepare"):
+            with tracer.start_as_current_span("agentarena.environment_prepare"):
                 container_id, mcp_url, env_version = (
                     EnvironmentManager.prepare_isolated_environment(
                         timeout_seconds=task_def.timeout_seconds,
@@ -108,7 +108,7 @@ async def execute_task_run_async(run_id: str) -> dict:
             # ── 2. Run agent (with task-level timeout) ─────────────────────
             start_ts = datetime.now(timezone.utc)
 
-            with tracer.start_as_current_span("agentforge.agent_execution"):
+            with tracer.start_as_current_span("agentarena.agent_execution"):
                 try:
                     agent_result = await asyncio.wait_for(
                         run_agent_for_task(
@@ -158,11 +158,11 @@ async def execute_task_run_async(run_id: str) -> dict:
             # ── 4. Copy container DB → host, run verifier against real state ─
             # The container's SQLite has the agent's changes. The host DB does
             # not. We must copy before destroying the container.
-            with tracer.start_as_current_span("agentforge.verifier_eval"):
+            with tracer.start_as_current_span("agentarena.verifier_eval"):
                 verifier_db_session = None
                 tmp_db_path = None
                 try:
-                    tmp_fd, tmp_db_path = tempfile.mkstemp(suffix=".db", prefix=f"agentforge_{run_id}_")
+                    tmp_fd, tmp_db_path = tempfile.mkstemp(suffix=".db", prefix=f"agentarena_{run_id}_")
                     os.close(tmp_fd)
 
                     EnvironmentManager.copy_db_from_container(container_id, tmp_db_path)

@@ -25,9 +25,9 @@ def init_telemetry(service_name: str = "agent-forge") -> trace.Tracer:
         _initialized = True
         logger.info("OpenTelemetry instrumentation initialized.")
 
-    return trace.get_tracer("agentforge.tracer")
+    return trace.get_tracer("agentarena.tracer")
 
 
 def get_tracer() -> trace.Tracer:
     """Get active OpenTelemetry tracer."""
-    return trace.get_tracer("agentforge.tracer")
+    return trace.get_tracer("agentarena.tracer")

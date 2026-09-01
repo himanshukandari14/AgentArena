@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
-    title="AgentForge",
+    title="AgentArena",
     description="AI agent training and evaluation environment",
     version="0.1.0",
     lifespan=lifespan,

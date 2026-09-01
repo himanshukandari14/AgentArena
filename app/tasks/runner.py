@@ -75,7 +75,7 @@ async def run_agent() -> None:
                     "role": "system",
                     "content": (
                         "You are an AI agent operating inside "
-                        "the AgentForge environment. "
+                        "the AgentArena environment. "
                         "Use the available tools to complete "
                         "the task. "
                         "Do not invent information. "

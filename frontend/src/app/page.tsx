@@ -138,7 +138,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <h1 className="font-mono text-base font-bold text-white tracking-wider flex items-center gap-2">
-                AGENTFORGE
+                AGENTARENA
                 <span className="text-[10px] bg-zinc-800 border border-zinc-700 text-zinc-300 font-normal px-2 py-0.5 rounded-full">
                   v0.1.0
                 </span>

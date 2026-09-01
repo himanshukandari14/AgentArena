@@ -1,11 +1,11 @@
 services:
   app:
     build: .
-    container_name: agentforge-app
+    container_name: agentarena-app
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+psycopg2://agentforge:agentforge@postgres:5432/agentdesk
+      - DATABASE_URL=postgresql+psycopg2://agentarena:agentarena@postgres:5432/agentdesk
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       postgres:
@@ -20,24 +20,24 @@ services:
 
   postgres:
     image: postgres:17
-    container_name: agentforge-postgres
+    container_name: agentarena-postgres
     environment:
-      POSTGRES_USER: agentforge
-      POSTGRES_PASSWORD: agentforge
+      POSTGRES_USER: agentarena
+      POSTGRES_PASSWORD: agentarena
       POSTGRES_DB: agentdesk
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U agentforge -d agentdesk"]
+      test: ["CMD-SHELL", "pg_isready -U agentarena -d agentdesk"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: agentforge-redis
+    container_name: agentarena-redis
     ports:
       - "6379:6379"
 

@@ -67,8 +67,8 @@ async def run_agent_for_task(
                 api_key=openrouter_key,
                 base_url=base_url,
                 default_headers={
-                    "HTTP-Referer": "https://agentforge.local",
-                    "X-Title": "AgentForge Platform",
+                    "HTTP-Referer": "https://agentarena.local",
+                    "X-Title": "AgentArena Platform",
                 },
             )
             logger.info(f"Using OpenRouter model: {model_name}")
@@ -106,7 +106,7 @@ async def run_agent_for_task(
                 {
                     "role": "system",
                     "content": (
-                        "You are an AI agent operating inside the AgentForge environment. "
+                        "You are an AI agent operating inside the AgentArena environment. "
                         "Use the available tools to complete the requested task completely. "
                         "Do not invent IDs or facts."
                     ),

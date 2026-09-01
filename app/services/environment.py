@@ -1,7 +1,7 @@
 """
 EnvironmentManager — Real Docker-per-run isolation.
 
-Each task run gets a fresh container from the agentforge-sandbox image.
+Each task run gets a fresh container from the agentarena-sandbox image.
 The container:
   - Starts with a baked-in seeded SQLite snapshot (no shared state)
   - Exposes the MCP SSE server on a random host port
@@ -21,7 +21,7 @@ import docker.errors
 
 logger = logging.getLogger(__name__)
 
-SANDBOX_IMAGE = os.getenv("SANDBOX_IMAGE", "agentforge-sandbox:latest")
+SANDBOX_IMAGE = os.getenv("SANDBOX_IMAGE", "agentarena-sandbox:latest")
 MCP_CONTAINER_PORT = 9000  # port the MCP SSE server listens on inside the container
 
 

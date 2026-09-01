@@ -5,7 +5,7 @@ from app.db.session import SessionLocal
 from app.models import Customer, Invoice, Ticket
 
 
-mcp = FastMCP("AgentForge")
+mcp = FastMCP("AgentArena")
 
 
 @mcp.tool()
